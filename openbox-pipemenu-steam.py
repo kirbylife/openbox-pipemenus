@@ -42,8 +42,6 @@ def set_item(name, appid=None):
 
 
 def main(args):
-    games = []
-
     ### Header ###
     print("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
     print("<openbox_pipe_menu>")
@@ -52,14 +50,30 @@ def main(args):
     if getstatusoutput("cd " + STEAM_URL)[0] == 1:
         set_item("Steam not installed")
     else:
-        games = getoutput("ls " + STEAM_URL + " | grep acf").split("\n")
+        folders = [STEAM_URL]
+        try:
+            # Search if you have games in other folders
+            with open(STEAM_URL + "/libraryfolders.vdf") as extras:
+                for line in extras:
+                    if "/" in line:
+                        folder = line.split("\t")[-1].strip()[1:-1]
+                        folder = folder + "/steamapps"
+                        folders.append(folder)
+        except Exception:
+            pass
+
+        games = []
+        for folder in folders:
+            library = getoutput("ls " + folder + " | grep acf").split("\n")
+            games.extend([folder + "/" + game for game in library])
+
         if not games:
             set_item("0 games installed")
         else:
-            for c in games:
+            for game in games:
                 appid = ""
                 name = ""
-                manifest = open(STEAM_URL + "/" + c, "r")
+                manifest = open(game, "r")
                 data = manifest.read().split("\n")
                 manifest.close()
                 for f in data:
@@ -67,7 +81,9 @@ def main(args):
                         appid = f.split('"')[3]
                     elif '"name"' in f:
                         name = f.split('"')[3]
-                set_item(name, appid)
+                        if "Proton" in name or "Steamworks" in name:
+                            continue
+                        set_item(name, appid)
 
     ### Footer ###
     print("</openbox_pipe_menu>")

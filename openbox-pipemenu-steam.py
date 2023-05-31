@@ -24,12 +24,13 @@
 
 import os
 
-try:
+try: # Python 2
     from commands import getoutput, getstatusoutput
-except:
+except: # Python 3
     from subprocess import getoutput, getstatusoutput
 
 STEAM_URL = os.environ['HOME'] + "/.steam/steam/steamapps"
+BANNED_NAMES = ("Proton", "Steamworks", "Linux Runtime")
 
 
 def set_item(name, appid=None):
@@ -81,7 +82,8 @@ def main(args):
                         appid = f.split('"')[3]
                     elif '"name"' in f:
                         name = f.split('"')[3]
-                        if "Proton" in name or "Steamworks" in name:
+                        is_valid = any(attr in name for attr in BANNED_NAMES)
+                        if is_valid:
                             continue
                         set_item(name, appid)
 
